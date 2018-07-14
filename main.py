@@ -4,9 +4,14 @@ from __future__ import print_function, division, absolute_import
 import numpy as np
 import mpi4py # for information
 from mpi4py import MPI
-from fortran_source.hw import *
+# if one deals with modules directly
+from fortran_source.hw import functions as fct
+# from folder.(*.so file) import module as namespace
 import sys
 import time
+
+
+# if there are only subroutines and functions :
 
 # from fortran_source.hw import * -> reference as hw1
 # from fortran_source import hw -> reference as hw.hw1
@@ -25,9 +30,10 @@ print('rank: ', rank, 'size: ', size)
 ################################################################################
 
 
-print(hw1(0,0.1))
-print(hw2(0,0.1))
-print(hw3(1+1j, 1+0.5*1j))
+
+print(fct.hw1(0,0.1))
+print(fct.hw2(0,0.1))
+print(fct.hw3(1+1j, 1+0.5*1j))
 
 # print(array_addition.__doc__)
 a = np.arange(27, dtype=np.complex128).reshape((3,9), order='F')
@@ -36,28 +42,28 @@ c = np.empty_like(a, dtype=np.complex128, order='F')
 
 
 # array_addition([[1,2,3],[1,2,3]],[[2,3,4],[2,3,4]],[[0,0,0],[0,0,0]])
-array_addition(a,b,c)
+fct.array_addition(a,b,c)
 
 print()
 print()
 
-print(dlapack_mul.__doc__)
+print(fct.dlapack_mul.__doc__)
 matrix_left = np.ones((10,1000), dtype=np.float64, order='F')
 matrix_right = np.ones((1000,10), dtype=np.float64, order='F')
 c = np.empty((10,10), dtype=np.float64, order='F')
-dlapack_mul(matrix_left, matrix_right, c)
+fct.dlapack_mul(matrix_left, matrix_right, c)
 
 matrix_left = np.ones((10,1000), dtype=np.complex128, order='F')
 matrix_right = np.ones((1000,10), dtype=np.complex128, order='F')
 c = np.zeros((10,10), dtype=np.complex128, order='F')
-zlapack_mul(matrix_left, matrix_right, c)
+fct.zlapack_mul(matrix_left, matrix_right, c)
 
 
 a = np.eye(5, dtype=np.complex128, order='F')*2
 a[0,0] = 0
 
 print('inverting....')
-if (inverse_matrix_z(a)):
+if (fct.inverse_matrix_z(a)):
   print('Singular matrix')
   sys.exit()
 else:
