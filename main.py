@@ -2,10 +2,15 @@
 
 from __future__ import print_function, division, absolute_import
 import numpy as np
-from mpi4py import MPI
-from fortran_source.hw import functions as fct
 import sys
 import time
+
+from mpi4py import MPI
+
+from fortran_source.hw import functions as fct
+from python_source.cli import parse_args
+
+args = parse_args()
 
 comm = MPI.COMM_WORLD
 master = 0
@@ -13,7 +18,15 @@ mpi_rank = comm.Get_rank()
 mpi_size = comm.Get_size()
 
 
-data_interval = 3**2*60 # some number to distribute
+if (mpi_rank == master):
+  print()
+  print('Namespace data from argument parser')
+  print(args) # namespace
+  sys.stdout.flush()
+
+comm.barrier()
+
+data_interval = args.orbitals**2 * (2*args.frequencies+1) * args.qpoints
 
 displ=[] # displacement
 displ.append(0)
@@ -45,12 +58,30 @@ for i in xrange(mpi_size):
   else:
     time.sleep(0.05)
 
+comm.barrier()
+
+
+data_vec = np.zeros((30,30,qstop-qstart))
+data_everyone = np.ones((10,10,data_interval), dtype=np.int64)
+
+
+if (mpi_rank == master):
+  comm.Reduce(MPI.IN_PLACE, [data_everyone, MPI.INT64_T], op=MPI.SUM, root=master)
+else:
+  comm.Reduce([data_everyone, MPI.INT64_T], None, op=MPI.SUM, root=master)
+
+if (mpi_rank == master):
+  print(data_everyone[...,0])
+  sys.stdout.flush()
+
+sys.exit()
 
 # from now on forward we only let the master write to stdout
 
-print(fct.hw1(0,0.1))
-print(fct.hw2(0,0.1))
-print(fct.hw3(1+1j, 1+0.5*1j))
+if (mpi_rank == master):
+  print(fct.hw1(0,0.1))
+  print(fct.hw2(0,0.1))
+  print(fct.hw3(1+1j, 1+0.5*1j))
 
 # print(array_addition.__doc__)
 a = np.arange(27, dtype=np.complex128).reshape((3,9), order='F')
@@ -61,10 +92,8 @@ c = np.empty_like(a, dtype=np.complex128, order='F')
 # array_addition([[1,2,3],[1,2,3]],[[2,3,4],[2,3,4]],[[0,0,0],[0,0,0]])
 fct.array_addition(a,b,c)
 
-print()
-print()
-
-print(fct.dlapack_mul.__doc__)
+if (mpi_rank == master):
+  print(fct.dlapack_mul.__doc__)
 matrix_left = np.ones((10,1000), dtype=np.float64, order='F')
 matrix_right = np.ones((1000,10), dtype=np.float64, order='F')
 c = np.empty((10,10), dtype=np.float64, order='F')
@@ -81,8 +110,8 @@ a[0,0] = 0
 
 print('inverting....')
 if (fct.inverse_matrix_z(a)):
-  print('Singular matrix')
-  sys.exit()
+  print('Singular matrix ... aborting')
+  comm.Abort()
 else:
   print('Good to go')
 
