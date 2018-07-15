@@ -12,7 +12,7 @@ all: hw.so
 hw.so: hw.F90 writeout.o
 	$(F2PY) -c -m hw $^ --fcompiler=gnu95 $(LIBS) -DF2PY_REPORT_ON_ARRAY_COPY=1 --quiet
 
-writeout.o: writeout.f90
+%.o: %.f90
 	$(FC) -c $< -o $@
 
 # we can however also create additionally the *.so file

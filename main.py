@@ -5,6 +5,7 @@ import numpy as np
 import sys
 import time
 
+import scipy.linalg
 from mpi4py import MPI
 
 from fortran_source.hw import functions as fct
@@ -143,7 +144,24 @@ comm.barrier()
 ########################################
 
 
-sys.exit()
+
+
+########################################
+# TESTING SCATTER
+########################################
+
+########################################
+# TESETING SEND RECV
+########################################
+
+########################################
+# TESTING PYTHON OBJECTS (lists etc. and not np arrays)
+########################################
+
+
+
+
+# sys.exit()
 
 # from now on forward we only let the master write to stdout
 
@@ -174,14 +192,31 @@ c = np.zeros((10,10), dtype=np.complex128, order='F')
 fct.zlapack_mul(matrix_left, matrix_right, c)
 
 
-a = np.eye(5, dtype=np.complex128, order='F')*2
-a[0,0] = 0
+# a = np.eye(5, dtype=np.complex128, order='F')*2
+a = np.random.random((200,200))
+b = np.asfortranarray(a).astype(np.complex128)
+# a[0,0] = 0
 
 print('inverting....')
-if (fct.inverse_matrix_z(a)):
-  print('Singular matrix ... aborting')
-  comm.Abort()
-else:
-  print('Good to go')
 
-print(a)
+t0 = time.time()
+for i in xrange(200):
+  a = np.random.random((2000,2000))
+  b = np.asfortranarray(a).astype(np.complex128)
+  fct.inverse_matrix_z(b)
+print((time.time()-t0)/200, ' s')
+
+t0 = time.time()
+for i in xrange(200):
+  a = np.random.random((2000,2000))
+  b = np.asfortranarray(a).astype(np.complex128)
+  scipy.linalg.inv(b)
+print((time.time()-t0)/200, ' s')
+
+# if (fct.inverse_matrix_z(b)):
+#   print('Singular matrix ... aborting')
+#   comm.Abort()
+# else:
+#   print('Good to go')
+
+# print(a)
