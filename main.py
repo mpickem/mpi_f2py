@@ -2,34 +2,51 @@
 
 from __future__ import print_function, division, absolute_import
 import numpy as np
-import mpi4py # for information
 from mpi4py import MPI
-# if one deals with modules directly
 from fortran_source.hw import functions as fct
-# from folder.(*.so file) import module as namespace
 import sys
 import time
 
-
-# if there are only subroutines and functions :
-
-# from fortran_source.hw import * -> reference as hw1
-# from fortran_source import hw -> reference as hw.hw1
-# import fortran_source.hw -> reference as fortran_source.hw.hw1
-
-
-################################################################################
-## for future MPI stuff
-################################################################################
-# print(mpi4py.get_include())
-# print(mpi4py.get_config())
 comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
-print('rank: ', rank, 'size: ', size)
-################################################################################
+master = 0
+mpi_rank = comm.Get_rank()
+mpi_size = comm.Get_size()
 
 
+data_interval = 3**2*60 # some number to distribute
+
+displ=[] # displacement
+displ.append(0)
+rct=[]   # receive count
+
+# distribution of data_interval
+for i in xrange(mpi_size-1):
+  rct.append((data_interval-displ[i])//(mpi_size-i))
+  displ.append(rct[i]+displ[i])
+rct.append(data_interval - displ[mpi_size-1])
+
+qstart = displ[mpi_rank]
+qstop  = displ[mpi_rank] + rct[mpi_rank]
+
+if (mpi_rank == master):
+  print()
+  print('datainterval size: ', data_interval)
+  print('rct list:          ', rct)
+  print('displ list:        ',displ)
+  print()
+  sys.stdout.flush()
+
+comm.barrier()
+
+for i in xrange(mpi_size):
+  if (mpi_rank == i):
+    print('rank: ', mpi_rank, qstart,':',qstop)
+    sys.stdout.flush()
+  else:
+    time.sleep(0.05)
+
+
+# from now on forward we only let the master write to stdout
 
 print(fct.hw1(0,0.1))
 print(fct.hw2(0,0.1))
