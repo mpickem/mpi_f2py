@@ -202,18 +202,26 @@ if (mpi_rank == 0):
   print(data_to_scatter)
   print(data)
   print()
+  print()
   sys.stdout.flush()
 
-comm.Scatterv([data_to_scatter, rct[mpi_rank]*4, displ[mpi_rank]*4, MPI.COMPLEX16], [data, 4*(qstop-qstart), MPI.COMPLEX16], root=master)
+comm.barrier()
+
+comm.Scatterv([data_to_scatter, rct*4, displ*4, MPI.COMPLEX16], [data, 4*(qstop-qstart), MPI.COMPLEX16], root=master)
 
 if (mpi_rank == 0):
+  print(data_to_scatter[:,:,displ[0]:displ[0]+rct[0]])
+  print()
   print(data)
+  print()
   sys.stdout.flush()
 comm.barrier()
 
 if (mpi_rank == master):
   print('END SCATTER TEST') # never forget about rescaling rct and displ 1!!!!
   sys.stdout.flush()
+
+sys.exit()
 
 ########################################
 # TESTING SEND RECV
