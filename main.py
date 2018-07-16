@@ -71,6 +71,12 @@ comm.barrier()
 # TESTING REDUCE
 ########################################
 
+if (mpi_rank == master):
+  print()
+  print('REDUCE TEST')
+  print()
+  sys.stdout.flush()
+
 data_everyone = np.ones((10,10,data_interval), dtype=np.int64, order='F')
 # Reducing stuff
 if (mpi_rank == master):
@@ -82,6 +88,11 @@ if (mpi_rank == master):
   print(data_everyone[...,0])
   sys.stdout.flush()
 
+if (mpi_rank == master):
+  print()
+  print('END REDUCE TEST')
+  print()
+
 comm.barrier()
 ########################################
 
@@ -92,6 +103,12 @@ comm.barrier()
 ########################################
 # TESTING GATHERV
 ########################################
+
+if (mpi_rank == master):
+  print()
+  print('GATHERV TEST')
+  print()
+  sys.stdout.flush()
 
 data_vec = np.ones((2,2,qstop-qstart), dtype=np.float64, order='F') * (mpi_rank+1)
 
@@ -116,6 +133,12 @@ if (mpi_rank == master):
   sys.stdout.flush()
 
 comm.barrier()
+
+if (mpi_rank == master):
+  print()
+  print('END GATHERV TEST')
+  print()
+  sys.stdout.flush()
 ########################################
 
 
@@ -123,6 +146,12 @@ comm.barrier()
 ########################################
 # TESTING BCAST
 ########################################
+
+if (mpi_rank == master):
+  print()
+  print('BCAST TEST')
+  print()
+  sys.stdout.flush()
 
 
 data = np.zeros((3,3,data_interval), dtype=np.complex128, order='F')
@@ -141,6 +170,10 @@ if (mpi_rank == 1):
   print(data.flags)
 comm.barrier()
 
+if (mpi_rank == master):
+  print('END BCAST TEST') # never forget about rescaling rct and displ 1!!!!
+  sys.stdout.flush()
+
 ########################################
 
 
@@ -150,13 +183,75 @@ comm.barrier()
 # TESTING SCATTER
 ########################################
 
+if (mpi_rank == master):
+  print()
+  print('SCATTER TEST')
+  print()
+  sys.stdout.flush()
+
+comm.barrier()
+
+data = np.zeros((2,2,qstop-qstart), dtype=np.complex128, order='F')
+if (mpi_rank == master):
+  data_to_scatter = np.arange(2*2*data_interval, dtype=np.complex128).reshape((2,2,data_interval), order='F')
+else:
+  data_to_scatter = None
+
+
+if (mpi_rank == 0):
+  print(data_to_scatter)
+  print(data)
+  print()
+  sys.stdout.flush()
+
+comm.Scatterv([data_to_scatter, rct[mpi_rank]*4, displ[mpi_rank]*4, MPI.COMPLEX16], [data, 4*(qstop-qstart), MPI.COMPLEX16], root=master)
+
+if (mpi_rank == 0):
+  print(data)
+  sys.stdout.flush()
+comm.barrier()
+
+if (mpi_rank == master):
+  print('END SCATTER TEST') # never forget about rescaling rct and displ 1!!!!
+  sys.stdout.flush()
+
 ########################################
-# TESETING SEND RECV
+# TESTING SEND RECV
 ########################################
 
 ########################################
 # TESTING PYTHON OBJECTS (lists etc. and not np arrays)
 ########################################
+
+if (mpi_rank == master):
+  print('ISEND PYTHON TEST') # never forget about rescaling rct and displ 1!!!!
+  sys.stdout.flush()
+
+comm.barrier()
+
+if (mpi_rank == master):
+  data = [123, 'what', 3.0+1j*25]
+else:
+  data = None
+
+if (mpi_rank == master):
+  comm.isend(data, dest=1, tag=11) # small i; general python objects
+  # large i -> buffer like objects which have to be provided in a list form
+  # normal -> data, size, type
+  # vector -> data, rct, displ, type
+elif (mpi_rank == 1):
+  print('data before: ', data)
+  data = comm.recv(source=0, tag=11)
+  print('data after: ', data)
+
+
+comm.barrier()
+
+if (mpi_rank == master):
+  print('END ISEND PYTHON TEST') # never forget about rescaling rct and displ 1!!!!
+  sys.stdout.flush()
+
+comm.barrier()
 
 
 
@@ -199,19 +294,20 @@ b = np.asfortranarray(a).astype(np.complex128)
 
 print('inverting....')
 
-t0 = time.time()
-for i in xrange(200):
-  a = np.random.random((2000,2000))
-  b = np.asfortranarray(a).astype(np.complex128)
-  fct.inverse_matrix_z(b)
-print((time.time()-t0)/200, ' s')
+if False:
+  t0 = time.time()
+  for i in xrange(200):
+    a = np.random.random((2000,2000))
+    b = np.asfortranarray(a).astype(np.complex128)
+    fct.inverse_matrix_z(b)
+  print((time.time()-t0)/200, ' s')
 
-t0 = time.time()
-for i in xrange(200):
-  a = np.random.random((2000,2000))
-  b = np.asfortranarray(a).astype(np.complex128)
-  scipy.linalg.inv(b)
-print((time.time()-t0)/200, ' s')
+  t0 = time.time()
+  for i in xrange(200):
+    a = np.random.random((2000,2000))
+    b = np.asfortranarray(a).astype(np.complex128)
+    scipy.linalg.inv(b)
+  print((time.time()-t0)/200, ' s')
 
 # if (fct.inverse_matrix_z(b)):
 #   print('Singular matrix ... aborting')
