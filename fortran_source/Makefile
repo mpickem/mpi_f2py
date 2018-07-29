@@ -23,4 +23,4 @@ hw.so: hw.F90 writeout.o
 
 .PHONY: clean
 clean:
-	rm -f *.so *.o *.mod *.pyc
+	rm -f *.so *.o *.mod *.pyc *.pyf

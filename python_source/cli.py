@@ -2,6 +2,8 @@
 
 import argparse
 
+# with can use the args argument for debugging purposes
+# e.g. parse_args('2 1 3'.split())
 def parse_args(args=None):
   parser = argparse.ArgumentParser(
     description='here is a description',
